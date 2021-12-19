@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-12-16 20:46:00
- * @LastEditTime: 2021-12-19 21:19:50
+ * @LastEditTime: 2021-12-19 23:24:36
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\hupu-spider\hupu-spider.service.ts
@@ -15,6 +15,7 @@ import { CreateHupuSpiderDto } from './dto/create-hupu-spider.dto';
 import { UpdateHupuSpiderDto } from './dto/update-hupu-spider.dto';
 import { HupuSpider } from './entities/hupu-spider.entity';
 import cheerio from 'cheerio';
+import { Qiniu } from 'src/utils/qiniu';
 function fIsUrL(sUrl) {
   const sRegex =
     '^((https|http|ftp|rtsp|mms)?://)' +
@@ -34,6 +35,25 @@ function fIsUrL(sUrl) {
   }
   return false;
 }
+
+type ArticleDto = {
+  id: number;
+  articleid: string;
+  title: string;
+  avatar: string;
+  username: string;
+  images: string;
+  sourceUrl: string;
+  createTime?: any;
+  articleTime?: any;
+  modifiedTime?: any;
+};
+
+type ImageDto = {
+  key: string;
+  url: string;
+};
+
 @Injectable()
 export class HupuSpiderService {
   constructor(
@@ -48,6 +68,39 @@ export class HupuSpiderService {
     return this.hupuRepository.find();
   }
 
+  async upload() {
+    const json = await this.hupuRepository.find();
+    const acticles = new Set();
+    const article: any[] = json.reduce((acc: ArticleDto[], cur: any) => {
+      if (!acticles.has(cur.articleid)) {
+        acticles.add(cur.articleid);
+        acc.push(cur);
+        return acc;
+      } else {
+        return acc;
+      }
+    }, []);
+
+    const images = article.reduce((acc: ImageDto[], cur: ArticleDto) => {
+      const imgs = cur?.images.split(',');
+      if (imgs.length > 0) {
+        imgs.forEach((item, index) => {
+          acc.push({
+            key: cur.articleid + '-' + index,
+            url: item,
+          });
+        });
+        return acc;
+      } else {
+        return acc;
+      }
+    }, []);
+
+    const qiniu = new Qiniu();
+    for (const item of images) {
+      await qiniu.fetchWebUrlPlus(item.url, item.url);
+    }
+  }
   findOne(id: number) {
     return this.hupuRepository.findOne();
   }
