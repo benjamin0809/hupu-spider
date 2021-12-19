@@ -1,10 +1,10 @@
 {
   "type": "mysql",
-  "host": "localhost",
+  "host": "47.119.149.96",
   "port": 3306,
   "username": "root",
-  "password": "mysql1234",
-  "database": "console_next",
+  "password": "mysql123",
+  "database": "admin",
   "entities": ["dist/**/*.entity{.ts,.js}"],
   "synchronize": true
 }

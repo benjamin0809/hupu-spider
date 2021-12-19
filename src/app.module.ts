@@ -11,10 +11,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Connection } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserModule } from './user/user.module';
+import { UserModule } from './auth/user/user.module';
+import { HupuModule } from './hupu/hupu.module';
+import { HupuSpiderModule } from './hupu-spider/hupu-spider.module';
 // @Dependencies(Connection)
 @Module({
-  imports: [TypeOrmModule.forRoot(), UserModule],
+  imports: [TypeOrmModule.forRoot(), UserModule, HupuModule, HupuSpiderModule],
   controllers: [AppController],
   providers: [AppService],
 })
