@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-12-19 23:06:05
- * @LastEditTime: 2021-12-19 23:22:18
+ * @LastEditTime: 2021-12-21 00:09:12
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\utils\qiniu.ts
@@ -10,7 +10,7 @@ import * as qiniu from 'qiniu';
 
 const accessKey = 'jfxJjeElvLIUgldn-OmFQrSL4x4WTbZNRSkxEWZP';
 const secretKey = 'hCxKrvlFocCyjeP0WQ-gJerutHlb-_gG8-iUJ8S-';
-const bucket = 'bullet';
+const bucket = 'benjamin0809-image';
 
 const publicBucketDomain = 'https://image.popochiu.com';
 const mac = new qiniu.auth.digest.Mac(accessKey, secretKey);
@@ -105,7 +105,13 @@ export class Qiniu {
     });
   }
 
-  uploadFile(filename, localFile) {
+  /**
+   * 上传本地文件到七牛云
+   * @param filename 文件名称
+   * @param localFile 本地文件路径
+   * @returns 哈哈哈哈
+   */
+  uploadFile(filename: string, localFile: string) {
     return new Promise((resolve, reject) => {
       // 文件上传
       formUploader.putFile(
@@ -124,7 +130,7 @@ export class Qiniu {
               key: respBody.key,
               url: await bucketManager.publicDownloadUrl(
                 publicBucketDomain,
-                '',
+                respBody.key,
               ),
             });
           } else {
@@ -136,39 +142,22 @@ export class Qiniu {
     });
   }
 
-  fetchWebUrl(resUrl, key) {
+  /**
+   * 抓取网络资源后，上传到七牛云
+   * @param resUrl 资源路径
+   * @param key 七牛key（文件名）
+   * @returns 七牛资源
+   */
+  fetchWebUrlPlus(
+    resUrl: string,
+    key: string,
+  ): Promise<{ hash: string; key: string; url: string }> {
     return new Promise((resolve, reject) => {
       bucketManager.fetch(
         resUrl,
         bucket,
         key,
-        function (err, respBody, respInfo) {
-          if (err) {
-            console.log(err);
-            reject(err);
-          } else {
-            if (respInfo.statusCode == 200) {
-              resolve({
-                hash: respBody.hash,
-                key: respBody.key,
-              });
-            } else {
-              reject(respBody);
-              console.error(respBody);
-            }
-          }
-        },
-      );
-    });
-  }
-
-  fetchWebUrlPlus(resUrl, key) {
-    return new Promise((resolve, reject) => {
-      bucketManager.fetch(
-        resUrl,
-        bucket,
-        key,
-        async function (err, respBody, respInfo) {
+        async (err, respBody, respInfo) => {
           if (err) {
             console.log(err);
             reject(err);
@@ -192,7 +181,12 @@ export class Qiniu {
     });
   }
 
-  getPublicDownloadUrl(key) {
+  /**
+   * 根据key获取七牛云资源链接
+   * @param key keyName
+   * @returns URL
+   */
+  getPublicDownloadUrl(key: string) {
     return bucketManager.publicDownloadUrl(publicBucketDomain, key);
   }
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-12-16 20:46:00
- * @LastEditTime: 2021-12-19 23:24:36
+ * @LastEditTime: 2021-12-21 00:11:37
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\hupu-spider\hupu-spider.service.ts
@@ -16,6 +16,7 @@ import { UpdateHupuSpiderDto } from './dto/update-hupu-spider.dto';
 import { HupuSpider } from './entities/hupu-spider.entity';
 import cheerio from 'cheerio';
 import { Qiniu } from 'src/utils/qiniu';
+import dateUtils from 'src/utils/date-utils';
 function fIsUrL(sUrl) {
   const sRegex =
     '^((https|http|ftp|rtsp|mms)?://)' +
@@ -121,8 +122,6 @@ export class HupuSpiderService {
         }
 
         const $ = cheerio.load(res.text);
-
-        debugger;
         const articalList = $('.seo-dom a');
         const tasks = [];
         articalList.each((idx, element) => {
@@ -186,13 +185,7 @@ export class HupuSpiderService {
   getArticleDetails(href, articleHref) {
     const dto: CreateHupuSpiderDto = this.hupuRepository.create();
     const dtos: CreateHupuSpiderDto[] = [];
-    // const datePath = dateUtils.getCurrentDate();
-    const staticPath = '../public';
-    // const webpath = '/upload/' + datePath + '/';
-    // const subfix = staticPath + webpath;
-    // const outPath = path.resolve(__dirname, subfix);
-    // const qiniu = new Qiniu();
-    //console.log('outPath', outPath)
+    const qiniu = new Qiniu();
     return new Promise((resolve, reject) => {
       superagent.get(href).end(async (error, resp) => {
         if (error) {
@@ -207,73 +200,56 @@ export class HupuSpiderService {
         const $ = cheerio.load(resp.text);
         const title = $('.bbs-user-title').text(); // 帖子标题
         const userInfo = $('.bbs-user-info');
-        console.log('userInfo,', userInfo);
+        // console.log('userInfo,', userInfo);
         const avataoInfo = $(userInfo);
-        console.log('avataoInfo,', avataoInfo);
+        // console.log('avataoInfo,', avataoInfo);
         const img = $(avataoInfo);
-        console.log('img,', img);
+        // console.log('img,', img);
         const imgSrc = img.attr('src');
-        console.log('imgSrc,', imgSrc);
-        const avatar = $('.bbs-user-info .bbs-user-info-avator img').attr(
-          'src',
-        ); // 用户头像
+        // console.log('imgSrc,', imgSrc);
+        let avatar = $('.bbs-user-info .bbs-user-info-avator img').attr('src'); // 用户头像
         const username = $('.bbs-user-info-name').text(); // 用户名称
 
         if (avatar) {
-          //  await qiniu.fetchWebUrl(avatar, username);
+          await qiniu.fetchWebUrlPlus(avatar, username);
         }
 
         if (username) {
-          // avatar = await qiniu.getPublicDownloadUrl(username);
+          avatar = await qiniu.getPublicDownloadUrl(username);
         }
 
-        // const stime = dateUtils.translateHupuTime(
-        //   $('.bbs-user-info-time').text(),
-        // ); // 文章发帖时间
-        const timestamp = new Date().getTime().toString();
-        const article = {
-          id: Number(
-            timestamp.substr(5, timestamp.length - 1) +
-              articleHref.replace(/[^0-9]/gi, ''),
-          ),
-          articleid: Number(articleHref.replace(/[^0-9]/gi, '')) || +new Date(),
-          title: title || '无标题',
-          avatar: avatar,
-          username: username,
-          // articleTime: stime,
-          sourceUrl: href,
-          images: [],
-        };
+        const stime = dateUtils.translateHupuTime(
+          $('.bbs-user-info-time').text(),
+        ); // 文章发帖时间
 
-        const contetn3 = $('.bbs-thread-content center center center img');
-        $(contetn3).each((id, ele) => {
+        dto.sourceUrl = href;
+        dto.title = title || '无标题';
+        dto.username = username;
+        dto.avatar = avatar || 'notAvatar';
+        dto.articleid =
+          Number(articleHref.replace(/[^0-9]/gi, '')) || +new Date();
+        dto.articleTime = stime;
+        const img_elements = $('.bbs-thread-content center center center img');
+
+        for (const ele of img_elements) {
           const $ele = $(ele);
+          // 内容图片
           const src = $ele.attr('src') || $ele.attr('data-src');
+          // 内容图片
           const url = src.split('?x-oss-process=image').slice(0, 1).join('');
-          const opts = { url };
-
+          const id = $ele.attr('id');
           const fileName =
-            article.articleid + '-' + id + '-' + url.split('/').slice(-1);
+            dto.articleid + '-' + id + '-' + url.split('/').slice(-1);
+          const res = await qiniu.fetchWebUrlPlus(url, fileName);
+          const resultUrl = res.url;
 
-          // const entity = this.filedao.getInstance();
-          // entity.filename = fileName;
-          // entity.masterid = article.articleid;
-          // entity.sourceUrl = src;
-          // entity.path = outPath + '/' + fileName;
-          // entity.fullpath = webpath + fileName;
-          article.images.push(url);
-          dto.sourceUrl = article.sourceUrl;
-          dto.images = article.images.join(',');
-          dto.title = title || '无标题';
-          dto.username = username;
-          dto.avatar = avatar || 'notAvatar';
-          dto.articleid = article.articleid;
-          dto.sourceUrl = article.sourceUrl;
-          dto.articleTime = $('.bbs-user-info-time').text();
+          dto.images && dto.images.length > 0
+            ? (dto.images += ',' + resultUrl)
+            : (dto.images = resultUrl);
           dtos.push(dto);
-          this.insertArticle(dto);
-          // await this.saveIntoFile(entity, id, opts, outPath, fileName);
-        });
+        }
+        console.log(dto.images);
+        this.insertArticle(dto);
         resolve(dtos);
       });
     });
