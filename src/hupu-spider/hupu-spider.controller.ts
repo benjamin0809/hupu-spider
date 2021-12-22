@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-12-16 20:45:59
- * @LastEditTime: 2021-12-19 23:26:37
+ * @LastEditTime: 2021-12-22 22:12:57
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\hupu-spider\hupu-spider.controller.ts
@@ -13,6 +13,7 @@ import {
   Body,
   Patch,
   Param,
+  Query,
   Delete,
 } from '@nestjs/common';
 import { HupuSpiderService } from './hupu-spider.service';
@@ -33,6 +34,19 @@ export class HupuSpiderController {
     return this.hupuSpiderService.findAll();
   }
 
+  @Get('/page')
+  findSome(
+    @Query('page') page: number,
+    @Query('pageSize') pageSize: number,
+    @Query('name') name: string,
+  ) {
+    return this.hupuSpiderService.page({
+      page: ~~page,
+      pageSize: ~~pageSize,
+      name,
+    });
+  }
+
   @Get('upload')
   upload() {
     return this.hupuSpiderService.upload();
@@ -40,9 +54,7 @@ export class HupuSpiderController {
 
   @Get('/getImage')
   getMobileHupuImages() {
-    return this.hupuSpiderService.getMobileHupuImages(
-      'https://m.hupu.com/bbs/4614-1',
-    );
+    return this.hupuSpiderService.fetchMore();
   }
 
   @Get(':id')

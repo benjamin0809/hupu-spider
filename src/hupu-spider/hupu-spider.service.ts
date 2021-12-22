@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-12-16 20:46:00
- * @LastEditTime: 2021-12-21 00:11:37
+ * @LastEditTime: 2021-12-22 20:23:35
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\hupu-spider\hupu-spider.service.ts
@@ -10,7 +10,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as superagent from 'superagent';
 import * as url from 'url';
-import { Repository } from 'typeorm';
+import { Repository, getConnection, getManager } from 'typeorm';
 import { CreateHupuSpiderDto } from './dto/create-hupu-spider.dto';
 import { UpdateHupuSpiderDto } from './dto/update-hupu-spider.dto';
 import { HupuSpider } from './entities/hupu-spider.entity';
@@ -69,6 +69,23 @@ export class HupuSpiderService {
     return this.hupuRepository.find();
   }
 
+  async page({ page, pageSize, name }) {
+    const [data, total] = await getManager()
+      .createQueryBuilder(HupuSpider, 'HupuSpider')
+      .where(`HupuSpider.title like :title`, {
+        title: `%${name}%`
+      })
+      .skip(~~page)
+      .take(~~pageSize)
+      .getManyAndCount();
+    return {
+      page,
+      pageSize,
+      total,
+      data
+    };
+  }
+
   async upload() {
     const json = await this.hupuRepository.find();
     const acticles = new Set();
@@ -112,6 +129,16 @@ export class HupuSpiderService {
 
   remove(id: number) {
     return `This action removes a #${id} hupuSpider`;
+  }
+
+  async fetchMore() {
+    const url = 'https://m.hupu.com/bbs/4614-';
+    const promiseTask = [];
+    for (let i = 5; i < 20; i++) {
+      promiseTask.push(this.getMobileHupuImages(url + i));
+    }
+
+    return Promise.allSettled(promiseTask);
   }
   getMobileHupuImages(spider_url) {
     return new Promise((resolve) => {
