@@ -73,7 +73,7 @@ export class HupuSpiderService {
     const [data, total] = await getManager()
       .createQueryBuilder(HupuSpider, 'HupuSpider')
       .where(`HupuSpider.title like :title`, {
-        title: `%${name}%`
+        title: `%${name}%`,
       })
       .skip(~~page)
       .take(~~pageSize)
@@ -82,7 +82,7 @@ export class HupuSpiderService {
       page,
       pageSize,
       total,
-      data
+      data,
     };
   }
 
