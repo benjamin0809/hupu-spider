@@ -1,7 +1,7 @@
 /*
  * @Author: your name
  * @Date: 2021-12-16 20:45:59
- * @LastEditTime: 2021-12-22 23:34:02
+ * @LastEditTime: 2021-12-23 20:40:54
  * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\hupu-spider\hupu-spider.controller.ts
@@ -16,11 +16,13 @@ import {
   Query,
   Delete,
   UseGuards,
+  HttpException,
 } from '@nestjs/common';
 import { HupuSpiderService } from './hupu-spider.service';
 import { CreateHupuSpiderDto } from './dto/create-hupu-spider.dto';
 import { UpdateHupuSpiderDto } from './dto/update-hupu-spider.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CustomHttpException } from 'src/filters/custom-http-exception';
 
 @Controller('hupu')
 export class HupuSpiderController {
@@ -59,6 +61,11 @@ export class HupuSpiderController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.hupuSpiderService.findOne(+id);
+  }
+
+  @Post('/exception')
+  exception() {
+    throw new CustomHttpException({ message: 'asd', status: 405, code: 10096 });
   }
 
   @UseGuards(JwtAuthGuard)

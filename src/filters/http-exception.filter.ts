@@ -1,8 +1,8 @@
 /*
  * @Author: your name
  * @Date: 2021-12-22 20:37:28
- * @LastEditTime: 2021-12-22 20:38:28
- * @LastEditors: your name
+ * @LastEditTime: 2021-12-23 20:42:44
+ * @LastEditors: Please set LastEditors
  * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  * @FilePath: \hupu-spider\src\filters\http-exception.filter.ts
  */
@@ -14,10 +14,11 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { CustomHttpException } from './custom-http-exception';
 
-@Catch(HttpException)
+@Catch(CustomHttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
+  catch(exception: CustomHttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
@@ -29,7 +30,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         error: message,
       }, // 获取全部的错误信息
       message: '请求失败',
-      code: 1, // 自定义code
+      code: exception.getErrorCode() || 5, // 自定义code
       url: request.originalUrl, // 错误的url地址
     };
     const status =
